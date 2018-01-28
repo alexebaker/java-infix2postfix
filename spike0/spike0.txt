@@ -1,0 +1,207 @@
+SPIKE0 - INFIX-TO-POSTFIX TRANSLATION
+
+((s0.0)) Key dates
+
+  ((s0.0.1)) spike0 is due on Monday January 29, 2018 at 5pm.
+
+  ((s0.0.2)) Note that spike1 may be released before that date.
+
+  ((s0.0.3)) The spike0 code turn-in mechanism will be detailed in
+             class no later than Thursday January 25, 2018.
+
+((s0.1)) The primary task of spike0 is to write a standalone program
+-- in C, C++, or Java -- that reads from standard input, parses the
+input according to a specified grammar, and writes to standard output
+a postfix translation of valid input.
+
+((s0.2)) This task is described by a 'spec package', which is a zip
+file named 'spike0-' plus a version number, such as 'spike0-10.zip'.
+
+  ((s0.2.1.1)) A spike0 spec package with a larger version number
+               supercedes any with a smaller version number.
+
+  ((s0.2.1.2)) See (s0.9) below for details of any spec package
+               revisions.
+
+  ((s0.2.2)) Files in the spike0 spec package include:
+
+   ((s0.2.2.1)) spike0.txt: This file.  Everything in spike0.txt is
+                normative for the spike0.
+
+   ((s0.2.2.2)) implementation-notes.txt: Some suggestions and
+                discussion about implementation choices.  Everything
+                in implementation-notes.txt is advisory for spike0.
+
+   ((s0.2.2.3)) tests/LT*.(in|out): Files containing legal test input
+                (.in files) according to the grammar below (s0.3), and
+                their corresponding required outputs (.out files).
+
+    ((s0.2.2.3.1)) Note that the '.out' files provide the exact
+                   byte-for-byte required output for the corresponding
+                   '.in'.  What your spike0 program sends to standard
+                   output MUST match the contents of the .out file
+                   _exactly_ or it is incorrect.
+
+    ((s0.2.2.3.2)) Note also there are _many_ aspects of the grammar
+                   that the provided examples do not test!  You are
+                   expected to develop additional .in/.out files of
+                   your own!
+
+((s0.3)) This is the spike0 target grammar:
+
+PROGRAM     <- | STATEMENT PROGRAM
+STATEMENT   <- ASGN_EXPR ";"
+ASGN_EXPR   <- ID "=" ASGN_EXPR | SIMPLE_EXPR
+SIMPLE_EXPR <- TERM | SIMPLE_EXPR TERM_OP TERM
+TERM        <- FACTOR | TERM FACTOR_OP FACTOR
+FACTOR      <- POSTFIX_EXPR | PREUN_OP FACTOR
+POSTFIX_EXPR<- PRIMARY_EXPR | POSTFIX_EXPR POSTUN_OP
+PRIMARY_EXPR<- ID | NUM | "(" ASGN_EXPR ")"
+
+TERM_OP     <- "+" | "-"
+FACTOR_OP   <- "*" | "/"
+PREUN_OP    <- "-"
+POSTUN_OP   <- "!" | "%"
+
+ID          <- {a single upper or lowercase alphabetic char}
+NUM         <- "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+((s0.4)) Examples
+
+((s0.4.1)) According to the grammar, is 'i+2' a valid PROGRAM?
+((s0.4.1.1)) No.  A PROGRAM is either empty or contains a STATEMENT
+followed by a program.  But every statement ends with a literal
+semicolon, which is not present in 'i+2' -- it cannot be a valid
+PROGRAM.
+
+((s0.4.2)) According to the grammar, is 'i+2;' a valid PROGRAM?
+((s0.4.2.1)) Yes, as evidenced by this derivation:
+
+                      PROGRAM
+                       /   \
+               STATEMENT    PROGRAM
+                /    \         \
+          ASGN_EXPR   ";"       (empty)
+              /
+        SIMPLE_EXPR
+            / |  \
+   SIMPLE_EXPR|   TERM
+       |    TERM_OP  \
+     TERM     |       FACTOR
+       |     "+"        |
+     FACTOR           POSTFIX_EXPR
+       |                |
+  POSTFIX_EXPR        PRIMARY_EXPR
+       |                |
+ PRIMARY_EXPR          NUM
+       |                |
+      ID               "2"
+       |
+      "i"
+
+((s0.4.3)) More legal inputs can be found in the tests/LT*.in files in
+the spec package.
+
+((s0.5)) Considerations for language parsing and postfix generation.
+
+((s0.5.1)) For all spikes including spike0, compiler input is assumed
+to be 7 bit ASCII (or, equivalently, UTF-8 with the most significant
+bit always 0).  The compiler may, but is not required to, detect
+failures of this assumption and report them as errors.  Compiler
+implementations are free to use char or wchar_t (in C/C++) or char (in
+Java) for handling input data.
+
+  ((s0.5.1.1)) All whitespace characters (defined as: space ' ',
+  form-feed '\f', newline '\n', carriage return '\r', tab '\t', and
+  vertical tab 'v') are to be ignored in the input.  Their presence or
+  absence does not affect the legality of the expression.
+
+((s0.5.2)) The empty alternative of the PROGRAM rule is to be
+satisfied only by an end-of-file condition on the input.  In other
+words, a PROGRAM is a sequence of zero or more STATEMENTs followed by
+eof.  When such a sequence has occurred, the translator must then exit
+with status 0.
+
+((s0.5.3)) Although PROGRAM is the grammar start symbol, postfix
+generation is to be performed one STATEMENT at a time.  (While or)
+after a STATEMENT is recognized, the corresponding postfix is printed,
+plus a newline (and the output buffer flushed if necessary), before
+the parsing of the next STATEMENT shall be undertaken.
+
+((s0.5.4)) The _only_ data allowed to appear on standard output is
+postfix translations formatted precisely as discussed below (s0.5.6).
+spike0 may or may not generate on standard error as desired.
+
+((s0.5.5)) If an input is invalid according to the grammar, spike0 has
+no obligation to generate any postfix output, although it may;
+however, spike0 must exit with a non-zero status if and only if a
+parsing error occurs.
+
+((s0.5.6)) Postfix output for a STATEMENT shall be generated as if by
+this algorithm, given a successful derivation rooted at STATEMENT:
+
+  ((s0.5.6.1)) First, call recursivePostfix(STATEMENT)
+
+  ((s0.5.6.1)) Then, output a single newline.
+
+((s0.5.7)) recursivePostfix(X) shall generate output as if by this
+algorithm, given a derivation starting from X:
+
+  ((s0.5.7.1)) If X is a non-terminal in the grammar, call
+  recursivePostfix on each derived child Y of X, in left-to-right
+  order, EXCEPT if the name of Y ends in '_OP', then generate postfix
+  for that last.
+
+  ((s0.5.7.2)) If X is a terminal in the grammar, output its value
+  literally, EXCEPT for two special cases:
+
+    ((s0.5.7.2.1)) If the terminal is ";", output nothing.
+
+    ((s0.5.7.2.2)) If the terminal is "-" and its parent is PREUN_OP,
+                   output "_" instead of "-".
+
+((s0.5.8)) For example, the postfix output corresponding to the
+derivation in (s0.4.2.1) is:
+
+i2+
+
+produced as if by this sequence of calls on the (s0.4.2.1) derivation:
+
+ generatePostfix() ->
+   recursivePostfixSTATEMENT ->
+     recursivePostfixASGN_EXPR ->
+       recursivePostfixSIMPLE_EXPR ->
+         recursivePostfixTERM ->
+           recursivePostfixFACTOR ->
+             recursivePostfixPOSTFIX_EXPR ->
+               recursivePostfixPRIMARY_EXPR ->
+                 recursivePostfixID ->             prints 'i'
+               <-
+             <-
+           <-
+         <-
+         recursivePostfixTERM ->
+           recursivePostfixFACTOR ->
+             recursivePostfixPOSTFIX_EXPR ->
+               recursivePostfixPRIMARY_EXPR ->
+                 recursivePostfixNUM ->            prints '2'
+               <-
+             <-
+           <-
+         <-
+         recursivePostfixTERM_OP ->                prints '+'
+       <-
+     <-
+   <-
+ <-
+ print newline                                     prints '\n'
+
+((s0.6)) Unused reserved
+
+((s0.7)) Unused reserved
+
+((s0.8)) Unused reserved
+
+((s0.9)) Spec revision history
+
+((s0.9.1)) Version spike0-10 released Thu Jan 18 08:39:00 2018

@@ -1,0 +1,64 @@
+IMPLEMENTATION NOTES FOR SPIKE0
+
+TO BUILD OR NOT TO BUILD A PARSE TREE?
+
+ - On the one hand, a parse tree is definitely not _necessary_ to
+   perform infix->postfix translation.
+
+ - On the other hand, we soon _will_ need to be building parse trees,
+   so getting comfortable with them now may well buy time later.
+
+ - If one chooses NOT to build parse tree, the core method of some
+   Translate class could be something like this:
+   
+    boolean translateInfix(inputstream in, outputstream out)  Javaish, or
+    bool translateInfix(inputstream& in, outputstream& out)   C++ish, etc.
+
+    which would parse bytes from 'in', print the translated result to
+    'out' and return false if an error occurred, otherwise true.  With
+    this approach, Translate subclasses (more or less loosely) based
+    on the grammar rules could provide suitable implementations of
+    translateInfix, or multiple methods -- translateInfixTERM, etc --
+    could be used within the Translate class.
+
+ - If one chooses TO build a parse tree, the core methods could be
+   something like this:
+
+      static Node readInfix(inputstream in)            Javaish
+      void printPostfix(outputstream out)
+
+      static Node * readInfix(inputstream& in)         C++ish, etc.
+      void printPostfix(outputstream& out)
+
+   where readInfix is a static class method that parses from 'in' and
+   returns a newly constructed instance of (a subclass of) Node, or
+   NULL if an error was encountered.  printPostfix is a non-static
+   class method that prints the parse tree rooted at 'this'.  Then
+   once again, subclasses of Node would provide implementations for
+   readInfix and printPostfix methods appropriate to the grammar and
+   required output.
+
+ - Note in all those method signatures examples, 'inputstream' and
+   'outputstream' are not necessarily intended to be the built-in IO
+   classes of the implementation language you are using.  It may be
+   more useful for inputstream and outputstream be classes you
+   control.  They can delegate to, or perhaps extend, standard stream
+   classes to do the actual IO, but provide a place for you to perform
+   IO-layer customizations.
+
+
+TO RECURSE OR NOT TO RECURSE?
+
+ - Top-down predictive parsing can be implemented in multiple ways.
+   One way is to define mutually-recursive methods loosely
+   corresponding to the grammar rules, which call each other to
+   recognize or translate their associated rule; another way is to use
+   a nonrecursive algorithm plus an explicit stack.
+
+ - Either approach can be made to work.  The recommendation here is to
+   prefer recursive descent over non-recursive-plus-stack algorithms,
+   if you don't already have a strong preference.  Although
+   implementing recursive descent parsing can involve a bit more code
+   to set up at first, its flexibility and clear separation of
+   concerns can pay dividends as task complexity grows.
+
