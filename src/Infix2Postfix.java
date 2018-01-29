@@ -2,7 +2,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class Infix2Postfix {
-    public static boolean debug = true;
+    public static boolean debug = false;
 
     private Parser parser;
 
@@ -25,7 +25,12 @@ public class Infix2Postfix {
         }
 
         Infix2Postfix i2c = new Infix2Postfix();
-        i2c.convert2Postfix(ir);
-        ir.close();
+        if (!i2c.convert2Postfix(ir)) {
+            ir.close();
+            System.exit(1);
+        }
+        else {
+            ir.close();
+        }
     }
 }

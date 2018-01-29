@@ -3,13 +3,13 @@ import java.util.Stack;
 
 public class Parser {
     private Grammar grammar;
-    private String postfixStatement;
-    private boolean debug = false;
+    private StringBuilder postfixStatement;
+    private boolean debug = true;
     private Stack<Integer> opStack;
 
     public Parser() {
         this.grammar = new Grammar();
-        this.postfixStatement = new String("");
+        this.postfixStatement = new StringBuilder();
         opStack = new Stack<>();
     }
 
@@ -20,7 +20,7 @@ public class Parser {
             return true;
         }
         else {
-            this.postfixStatement = new String("");
+            this.postfixStatement = new StringBuilder();
             this.opStack = new Stack<>();
             if (parseStatement(ir)) {
                 System.out.println(this.postfixStatement);
@@ -35,12 +35,12 @@ public class Parser {
         if (parseAsgnExpr(ir)) {
             if (ir.read() == ';') {
                 while (!this.opStack.empty()) {
-                    this.postfixStatement += (char) ((int) this.opStack.pop());
+                    this.postfixStatement.append((char) ((int) this.opStack.pop()));
                 }
                 return true;
             }
         }
-        if (debug) System.out.println(this.postfixStatement + "...false");
+        if (debug) System.out.println(this.postfixStatement.append("...false"));
         return false;
     }
 
@@ -135,12 +135,11 @@ public class Parser {
             if (ch == '(') {
                 this.opStack.push(ch);
                 if (parseAsgnExpr(ir)) {
-                    ch = ir.read();
-                    if (ch == ')') {
-                        while (!this.opStack.empty() && this.opStack.peek() != ch) {
-                            this.postfixStatement += this.opStack.pop();
+                    if (ir.read() == ')') {
+                        while (!this.opStack.empty() && this.opStack.peek() != '(') {
+                            this.postfixStatement.append((char) ((int) this.opStack.pop()));
                         }
-                        if (this.opStack.empty() || this.opStack.peek() != ch) {
+                        if (this.opStack.empty() || this.opStack.peek() != '(') {
                             return false;
                         }
                         this.opStack.pop();
@@ -201,7 +200,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isID(ch)) {
             if (debug) System.out.println((char) ch);
-            this.postfixStatement += (char) ch;
+            this.postfixStatement.append((char) ch);
             return true;
         }
         return false;
@@ -212,7 +211,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isNum(ch)) {
             if (debug) System.out.println((char) ch);
-            this.postfixStatement += (char) ch;
+            this.postfixStatement.append((char) ch);
             return true;
         }
         return false;
@@ -220,7 +219,7 @@ public class Parser {
 
     private void parseOp(int ch) {
         while (!this.opStack.empty() && opPrec(ch) <= opPrec(this.opStack.peek())) {
-            this.postfixStatement += (char) ((int) this.opStack.pop());
+            this.postfixStatement.append((char) ((int) this.opStack.pop()));
         }
         this.opStack.push(ch);
         return;
