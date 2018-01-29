@@ -1,36 +1,31 @@
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Infix2Postfix {
     public static boolean debug = true;
 
     private Parser parser;
-    private Grammar grammer;
 
     public Infix2Postfix() {
-        this(System.in);
+        this.parser = new Parser();
     }
 
-    public Infix2Postfix(InputStream stream) {
-        this.parser = new Parser(stream);
-        this.grammer = new Grammar();
+    public boolean convert2Postfix(InfixReader ir) throws IOException {
+        if (debug) System.out.println("Beginning Parse...");
+        return this.parser.parseProgram(ir);
     }
 
-    public void convert2Postfix() {
-        while (!this.parser.isEmpty()) {
-            String statement = this.parser.getStatement();
-            System.out.println(statement);
+    public static void main(String[] args) throws IOException {
+        InfixReader ir;
+        if (args.length >= 1) {
+            ir = new InfixReader(new FileReader(args[0]));
         }
-        return;
-    }
-
-    public static void main(String[] args) throws FileNotFoundException {
-        if (args.length > 1) {
-            System.setIn(new FileInputStream(args[1]));
+        else {
+            ir = new InfixReader();
         }
 
-        Infix2Postfix converter = new Infix2Postfix();
-        converter.convert2Postfix();
+        Infix2Postfix i2c = new Infix2Postfix();
+        i2c.convert2Postfix(ir);
+        ir.close();
     }
 }
