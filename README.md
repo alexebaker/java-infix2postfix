@@ -23,6 +23,6 @@ java src/Infix2Postfix < testfile.in > testfile.out
 https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
 
 
-##Author
+## Author
 
 [Alexander Baker](maileto:alexebaker@unm.edu)
