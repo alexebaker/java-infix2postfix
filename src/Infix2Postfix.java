@@ -1,3 +1,14 @@
+/**
+ * @author Alexander Baker
+ *
+ * CS 554
+ * Infix to Postfix converter
+ *
+ * This is tha main class to run the converstion which reades from stdin
+ * and write to stdout. If there is a parse error, then this exists with
+ * status code 1.
+ */
+
 import java.io.*;
 
 public class Infix2Postfix {
@@ -9,6 +20,13 @@ public class Infix2Postfix {
         this.parser = new Parser();
     }
 
+    /**
+     * Converts the given Reader to postfix and writes to stdout.
+     *
+     * @param ir Instance of InfixReader to read bytes from.
+     * @return true if the input was successfully parsed, false otherwise
+     * @throws IOException if input was unable to be read
+     */
     public boolean convert2Postfix(InfixReader ir) throws IOException {
         if (debug) System.out.println("Beginning Parse...");
         return this.parser.parseProgram(ir);

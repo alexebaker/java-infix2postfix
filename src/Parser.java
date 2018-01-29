@@ -1,3 +1,12 @@
+/**
+ * @author Alexander Baker
+ *
+ * CS 554
+ * Infix to Postfix converter
+ *
+ * The main class which parses infix to postfix.
+ */
+
 import java.io.IOException;
 import java.util.Stack;
 
@@ -13,13 +22,22 @@ public class Parser {
         opStack = new Stack<>();
     }
 
+    /**
+     * Function to be called to parse a program. This will parse multiple statements.
+     *
+     * @param ir input to parse the program from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     public boolean parseProgram(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Program...");
         int ch = ir.peek();
         if (ch == -1) {
+            // End of the input stream. If we got this far without an error, then the parse was good
             return true;
         }
 
+        // Re initialize the postfix conversion objs for next statement
         this.postfixStatement = new StringBuilder();
         this.opStack = new Stack<>();
         if (parseStatement(ir)) {
@@ -28,16 +46,25 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a statement as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseStatement(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Statement...");
         int ch = ir.peek();
         if (ch == ';') {
+            // An empty statement is valid
             ir.read();
             return true;
         }
         else {
             if (parseAsgnExpr(ir)) {
                 if (ir.read() == ';') {
+                    // Successful statement parse, print out the postfix
                     while (!this.opStack.empty()) {
                         this.postfixStatement.append((char) ((int) this.opStack.pop()));
                     }
@@ -50,6 +77,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse an AsgnExpr as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseAsgnExpr(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Assign Expression...");
         int chID = ir.peek();
@@ -67,6 +101,13 @@ public class Parser {
         return parseSimpleExpr(ir);
     }
 
+    /**
+     * Function to be called to parse a SimpleExpr as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseSimpleExpr(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Simple Expression...");
         int ch;
@@ -83,6 +124,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a Term as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseTerm(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Term...");
         int ch;
@@ -99,6 +147,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a Factor as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseFactor(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Factor...");
         int ch = ir.peek();
@@ -110,6 +165,14 @@ public class Parser {
         }
         return parsePostfixExpr(ir);
     }
+
+    /**
+     * Function to be called to parse a PostfixExpr as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
 
     private boolean parsePostfixExpr(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Postfix Expression...");
@@ -124,6 +187,7 @@ public class Parser {
             if (parsePrimaryExpr(ir)) {
                 ch = ir.peek();
                 if (this.grammar.isPostunOp(ch)) {
+                    // If the primary expression is followed by a PostunOp, we have to evaluate a PostfixExpr again
                     return parsePostfixExpr(ir);
                 }
                 return true;
@@ -133,6 +197,13 @@ public class Parser {
         return true;
     }
 
+    /**
+     * Function to be called to parse a PrimaryExpr as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parsePrimaryExpr(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Primary Expression...");
         int ch = ir.peek();
@@ -143,11 +214,14 @@ public class Parser {
             return parseNum(ir);
         }
         else if (ch == '(') {
+            // Handle parenthesis
             ch = ir.read();
             if (ch == '(') {
                 this.opStack.push(ch);
                 if (parseAsgnExpr(ir)) {
                     if (ir.read() == ')') {
+                        // make sure the parenthesis is closed
+                        // Resource: https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
                         while (!this.opStack.empty() && this.opStack.peek() != '(') {
                             this.postfixStatement.append((char) ((int) this.opStack.pop()));
                         }
@@ -163,6 +237,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a TermOp as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseTermOp(InfixReader ir) throws IOException {
        if (debug) System.out.println("Parsing Term Operator...");
         int ch = ir.read();
@@ -174,6 +255,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a FactorOp as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseFactorOp(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Factor Operator...");
         int ch = ir.read();
@@ -185,6 +273,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a PreunOp as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parsePreunOp(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Preun Operator...");
         int ch = ir.read();
@@ -196,6 +291,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a PostunOp as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parsePostunOp(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Postun Operator...");
         int ch = ir.read();
@@ -207,6 +309,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse an ID as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseID(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing ID...");
         int ch = ir.read();
@@ -218,6 +327,13 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Function to be called to parse a Num as defined in the grammar.
+     *
+     * @param ir input to parse from
+     * @return true if the parse was successful, false otherwise
+     * @throws IOException if the input could not be read
+     */
     private boolean parseNum(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Number...");
         int ch = ir.read();
@@ -229,7 +345,19 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Evaluate the opStack when an operator has been seen
+     *
+     * Resource: https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
+     *
+     * @param ch operator to evaluate on the opStack
+     */
     private void parseOp(int ch) {
+        /**
+         * @todo cleanup this if statement
+         *
+         * Can't figure out how to separate out this logic in one while loop cleanly
+         */
         if (ch == '=' || ch == '_') {
             while (!this.opStack.empty() && opPrec(ch) < opPrec(this.opStack.peek())) {
                 this.postfixStatement.append((char) ((int) this.opStack.pop()));
@@ -241,9 +369,16 @@ public class Parser {
             }
         }
         this.opStack.push(ch);
-        return;
     }
 
+    /**
+     * Determine the precedence of the operator
+     *
+     * Resource: https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
+     *
+     * @param ch operator to get the precedence for
+     * @return precedence of the operator, or -1 if invalid operator
+     */
     private int opPrec(int ch) {
         if (ch == '=') {
             return 0;
