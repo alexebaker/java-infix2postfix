@@ -1,13 +1,16 @@
 import java.io.IOException;
+import java.util.Stack;
 
 public class Parser {
     private Grammar grammar;
-    private String statement;
+    private String postfixStatement;
     private boolean debug = false;
+    private Stack<Integer> opStack;
 
     public Parser() {
         this.grammar = new Grammar();
-        this.statement = "";
+        this.postfixStatement = new String("");
+        opStack = new Stack<>();
     }
 
     public boolean parseProgram(InfixReader ir) throws IOException {
@@ -17,7 +20,10 @@ public class Parser {
             return true;
         }
         else {
+            this.postfixStatement = new String("");
+            this.opStack = new Stack<>();
             if (parseStatement(ir)) {
+                System.out.println(this.postfixStatement);
                 return parseProgram(ir);
             }
         }
@@ -28,12 +34,13 @@ public class Parser {
         if (debug) System.out.println("Parsing Statement...");
         if (parseAsgnExpr(ir)) {
             if (ir.read() == ';') {
-                System.out.println(this.statement + "...true");
-                this.statement = "";
+                while (!this.opStack.empty()) {
+                    this.postfixStatement += (char) ((int) this.opStack.pop());
+                }
                 return true;
             }
         }
-        System.out.println(this.statement + "...false");
+        if (debug) System.out.println(this.postfixStatement + "...false");
         return false;
     }
 
@@ -43,8 +50,9 @@ public class Parser {
         int chEq = ir.peek(2);
         if (this.grammar.isID(chID) && chEq == '=') {
             if (parseID(ir)) {
-                if (ir.read() == '=') {
-                    this.statement += '=';
+                int ch = ir.read();
+                if (ch == '=') {
+                    parseOp(ch);
                     return parseAsgnExpr(ir);
                 }
             }
@@ -123,11 +131,19 @@ public class Parser {
             return parseNum(ir);
         }
         else if (ch == '(') {
-            if (ir.read() == '(') {
-                this.statement += '(';
+            ch = ir.read();
+            if (ch == '(') {
+                this.opStack.push(ch);
                 if (parseAsgnExpr(ir)) {
-                    if (ir.read() == ')') {
-                        this.statement += ')';
+                    ch = ir.read();
+                    if (ch == ')') {
+                        while (!this.opStack.empty() && this.opStack.peek() != ch) {
+                            this.postfixStatement += this.opStack.pop();
+                        }
+                        if (this.opStack.empty() || this.opStack.peek() != ch) {
+                            return false;
+                        }
+                        this.opStack.pop();
                         return true;
                     }
                 }
@@ -141,7 +157,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isTermOp(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            parseOp(ch);
             return true;
         }
         return false;
@@ -152,7 +168,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isFactorOp(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            parseOp(ch);
             return true;
         }
         return false;
@@ -163,7 +179,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isPreunOp(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            parseOp(ch);
             return true;
         }
         return false;
@@ -174,7 +190,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isPostunOp(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            parseOp(ch);
             return true;
         }
         return false;
@@ -185,7 +201,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isID(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            this.postfixStatement += (char) ch;
             return true;
         }
         return false;
@@ -196,9 +212,27 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isNum(ch)) {
             if (debug) System.out.println((char) ch);
-            this.statement += (char) ch;
+            this.postfixStatement += (char) ch;
             return true;
         }
         return false;
+    }
+
+    private void parseOp(int ch) {
+        while (!this.opStack.empty() && opPrec(ch) <= opPrec(this.opStack.peek())) {
+            this.postfixStatement += (char) ((int) this.opStack.pop());
+        }
+        this.opStack.push(ch);
+        return;
+    }
+
+    private int opPrec(int ch) {
+        if (this.grammar.isTermOp(ch)) {
+            return 1;
+        }
+        else if (this.grammar.isFactorOp(ch)) {
+            return 2;
+        }
+        return -1;
     }
 }
