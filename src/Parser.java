@@ -31,7 +31,14 @@ public class Parser {
      */
     public boolean parseProgram(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Program...");
-        int ch = ir.peek();
+        int ch;
+        try {
+            ch = ir.peek();
+        }
+        catch (IOException ex) {
+            ch = -1;
+        }
+
         if (ch == -1) {
             // End of the input stream. If we got this far without an error, then the parse was good
             return true;
