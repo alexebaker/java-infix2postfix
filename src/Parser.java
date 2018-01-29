@@ -4,7 +4,7 @@ import java.util.Stack;
 public class Parser {
     private Grammar grammar;
     private StringBuilder postfixStatement;
-    private boolean debug = true;
+    private boolean debug = false;
     private Stack<Integer> opStack;
 
     public Parser() {
@@ -19,25 +19,31 @@ public class Parser {
         if (ch == -1) {
             return true;
         }
-        else {
-            this.postfixStatement = new StringBuilder();
-            this.opStack = new Stack<>();
-            if (parseStatement(ir)) {
-                System.out.println(this.postfixStatement);
-                return parseProgram(ir);
-            }
+
+        this.postfixStatement = new StringBuilder();
+        this.opStack = new Stack<>();
+        if (parseStatement(ir)) {
+            return parseProgram(ir);
         }
         return false;
     }
 
     private boolean parseStatement(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Statement...");
-        if (parseAsgnExpr(ir)) {
-            if (ir.read() == ';') {
-                while (!this.opStack.empty()) {
-                    this.postfixStatement.append((char) ((int) this.opStack.pop()));
+        int ch = ir.peek();
+        if (ch == ';') {
+            ir.read();
+            return true;
+        }
+        else {
+            if (parseAsgnExpr(ir)) {
+                if (ir.read() == ';') {
+                    while (!this.opStack.empty()) {
+                        this.postfixStatement.append((char) ((int) this.opStack.pop()));
+                    }
+                    System.out.println(this.postfixStatement);
+                    return true;
                 }
-                return true;
             }
         }
         if (debug) System.out.println(this.postfixStatement.append("...false"));
@@ -107,18 +113,20 @@ public class Parser {
 
     private boolean parsePostfixExpr(InfixReader ir) throws IOException {
         if (debug) System.out.println("Parsing Postfix Expression...");
-        int ch;
-        if (parsePrimaryExpr(ir)) {
-            ch = ir.peek();
-            if (this.grammar.isPostunOp(ch)) {
-                if (parsePostunOp(ir)) {
-                    return parsePostfixExpr(ir);
-                }
-                return false;
+        int ch = ir.peek();
+        if (this.grammar.isPostunOp(ch)) {
+            if (parsePostunOp(ir)) {
+                return parsePostfixExpr(ir);
             }
-            return true;
+            return false;
         }
-        return false;
+        else if (this.grammar.isID(ch) || this.grammar.isNum(ch) || ch == '(') {
+            if (parsePrimaryExpr(ir)) {
+                return  parsePostfixExpr(ir);
+            }
+            return false;
+        }
+        return true;
     }
 
     private boolean parsePrimaryExpr(InfixReader ir) throws IOException {
@@ -178,7 +186,7 @@ public class Parser {
         int ch = ir.read();
         if (this.grammar.isPreunOp(ch)) {
             if (debug) System.out.println((char) ch);
-            parseOp(ch);
+            parseOp((int) '_');
             return true;
         }
         return false;
@@ -218,19 +226,35 @@ public class Parser {
     }
 
     private void parseOp(int ch) {
-        while (!this.opStack.empty() && opPrec(ch) <= opPrec(this.opStack.peek())) {
-            this.postfixStatement.append((char) ((int) this.opStack.pop()));
+        if (ch == '=' || ch == '_') {
+            while (!this.opStack.empty() && opPrec(ch) < opPrec(this.opStack.peek())) {
+                this.postfixStatement.append((char) ((int) this.opStack.pop()));
+            }
+        }
+        else {
+            while (!this.opStack.empty() && opPrec(ch) <= opPrec(this.opStack.peek())) {
+                this.postfixStatement.append((char) ((int) this.opStack.pop()));
+            }
         }
         this.opStack.push(ch);
         return;
     }
 
     private int opPrec(int ch) {
-        if (this.grammar.isTermOp(ch)) {
+        if (ch == '=') {
+            return 0;
+        }
+        else if (this.grammar.isTermOp(ch)) {
             return 1;
         }
         else if (this.grammar.isFactorOp(ch)) {
             return 2;
+        }
+        else if (this.grammar.isPreunOp(ch) || ch == '_') {
+            return 3;
+        }
+        else if (this.grammar.isPostunOp(ch)) {
+            return 4;
         }
         return -1;
     }

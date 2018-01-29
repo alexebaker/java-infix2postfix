@@ -1,5 +1,4 @@
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 public class Infix2Postfix {
     public static boolean debug = false;
@@ -30,7 +29,7 @@ public class Infix2Postfix {
             System.exit(1);
         }
         else {
-            ir.close();
+           ir.close();
         }
     }
 }
