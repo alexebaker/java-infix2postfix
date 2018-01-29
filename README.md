@@ -25,4 +25,4 @@ https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
 
 ## Author
 
-[Alexander Baker](maileto:alexebaker@unm.edu)
+[Alexander Baker](mailto:alexebaker@unm.com)
