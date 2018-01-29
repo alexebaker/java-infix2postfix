@@ -122,7 +122,11 @@ public class Parser {
         }
         else if (this.grammar.isID(ch) || this.grammar.isNum(ch) || ch == '(') {
             if (parsePrimaryExpr(ir)) {
-                return  parsePostfixExpr(ir);
+                ch = ir.peek();
+                if (this.grammar.isPostunOp(ch)) {
+                    return parsePostfixExpr(ir);
+                }
+                return true;
             }
             return false;
         }
